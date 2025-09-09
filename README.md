@@ -6,7 +6,7 @@ Welcome to **Red Team Flashcards** — a tiny, focused single-page app for memor
 
 This README teaches people how to write a correct `cards.json` configuration so the app reads it reliably and without spelling traps.
 
-you can test it live here (https://mrhili.github.io/redteaming-flashcards/)[https://mrhili.github.io/redteaming-flashcards/]
+you can test it live here https://mrhili.github.io/redteaming-flashcards/
 
 ---
 
