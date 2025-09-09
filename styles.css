@@ -1,0 +1,19 @@
+:root{--bg:#0f1724;--card:#0b1220;--accent:#8bd3dd;--muted:#9aa6b2}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180deg,#071021, #0f1724);color:#e6eef6;margin:0;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.03)}
+.topbar h1{margin:0;font-size:18px}
+.controls{display:flex;gap:8px;align-items:center}
+.controls select,input,button{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);color:inherit;padding:6px 8px;border-radius:6px}
+.container{display:grid;grid-template-columns:220px 1fr;gap:18px;padding:18px}
+.sidebar{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px}
+.card-area{display:flex;flex-direction:column;align-items:center;gap:12px}
+.card{width:min(760px,90vw);min-height:300px;border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 30px rgba(2,6,23,0.7);transition:transform .28s ease,background .28s}
+.card.front{background:linear-gradient(180deg, rgba(139,211,221,0.06), rgba(15,25,36,0.2))}
+.card.back{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(8,12,16,0.2))}
+.card h2{margin:0 0 12px 0}
+.hints{font-size:14px;color:var(--muted)}
+.card-actions{width:min(760px,90vw);display:flex;justify-content:space-between;align-items:center}
+.card-actions button{padding:8px 10px;border-radius:8px}
+.footer{padding:12px 18px;text-align:center;color:var(--muted)}
+@media (max-width:800px){.container{grid-template-columns:1fr;}.sidebar{order:2}}

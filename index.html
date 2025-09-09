@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Red Team Flashcards — Brain Gym</title>
+<link rel="stylesheet" href="styles.css" />
+<!-- Lodash (utilities) -->
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+<!-- localForage (storage) -->
+<script src="https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+<h1>Red Team Flashcards</h1>
+<div class="controls">
+<select id="filter-category"><option value="">All categories</option></select>
+<select id="filter-difficulty">
+<option value="">All difficulties</option>
+<option value="easy">Easy</option>
+<option value="medium">Medium</option>
+<option value="hard">Hard</option>
+</select>
+<select id="filter-usefulness">
+<option value="">All usefulness</option>
+<option value="useful">Useful</option>
+<option value="dangerous">Dangerous</option>
+<option value="information">Information</option>
+</select>
+<input id="search" placeholder="search question or tags" />
+<button id="shuffle">Shuffle</button>
+<button id="export">Export JSON</button>
+<input id="import-file" type="file" accept="application/json" style="display:none" />
+<button id="import">Import JSON</button>
+</div>
+</header>
+
+
+<main class="container">
+<aside class="sidebar">
+<h3>Stats</h3>
+<div id="stats">Loading…</div>
+<h3>Categories</h3>
+<ul id="categories-list"></ul>
+</aside>
+
+
+<section class="card-area">
+<div id="flashcard" class="card front">
+<div id="card-content">
+<h2 id="question">Loading...</h2>
+<div id="hints" class="hints"></div>
+</div>
+</div>
+
+
+<div class="card-actions">
+<div class="left-actions">
+<button id="prev">◀ Prev</button>
+<button id="flip">Flip (F)</button>
+<button id="next">Next ▶</button>
+</div>
+<div class="right-actions">
+
+<label>Difficulty:</label>
+<button class="difficulty" data-diff="easy">Easy (1)</button>
+<button class="difficulty" data-diff="medium">Medium (2)</button>
+<button class="difficulty" data-diff="hard">Hard (3)</button>
+
+
+<label>Grasped</label>
+<button id="toggle-grasped">Toggle (G)</button>
+
+
+<label>Usefulness</label>
+<select id="usefulness-select">
+<option value="useful">Useful</option>
+<option value="dangerous">Dangerous</option>
+<option value="information">Information</option>
+</select>
+</div>
+</div>
+</section>
+</main>
+
+
+<footer class="footer">
+<small>Keyboard: F=flip • N=next • P=prev • 1/2/3=difficulty • G=grasped • U=cycle usefulness</small>
+</footer>
+
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
