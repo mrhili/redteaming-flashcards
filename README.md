@@ -184,12 +184,3 @@ If you request the Laravel scaffolding I can provide the routes/controllers that
 * Use consistent categories and hyphenation to make filters useful.
 * Always validate new JSON with the validator before sharing.
 
----
-
-If you want, I can now:
-
-* add this `README.md` into the project files in canvas (done),
-* provide a Node CLI `validate.js` script that runs the checks and returns a non-zero exit code on error, or
-* generate 50 more safe, study-focused example cards for the dataset.
-
-Which of those next steps sounds tasty?
