@@ -96,6 +96,15 @@ class App {
     this.ui.difficultyBtns.forEach(b=>b.addEventListener('click', e=>this.setDifficulty(e.target.dataset.diff)));
     this.ui.usefulnessSelect.addEventListener('change', ()=>this.setUsefulness(this.ui.usefulnessSelect.value));
     this.ui.flashcard.addEventListener('click', ()=>this.flip());
+
+    this.ui.clearFilters = document.getElementById('clear-filters');
+    this.ui.clearFilters.addEventListener('click', ()=> {
+    this.ui.search.value = '';
+    this.ui.filterCategory.value = '';
+    this.ui.filterDifficulty.value = '';
+    this.ui.filterUsefulness.value = '';
+    this.applyFilters();
+  });
   }
 
   _bindShortcuts(){
@@ -112,40 +121,107 @@ class App {
     });
   }
 
-  async init(){
-    try{
-      const res = await fetch('cards.json');
-      const arr = await res.json();
-      this.deck = new Deck(arr);
-      this._populateFilters(arr);
-      this.labels = await this.storage.loadLabels();
-      this.applyFilters();
-      this.renderStats();
-      this.showCurrent();
-    }catch(err){
-      console.error('Failed to load cards.json', err);
-      this.ui.question.textContent = 'Failed to load cards.json — check console.';
-    }
+async init(){
+  try{
+    // 1. Load the JSON deck
+    const res = await fetch('cards.json');
+    const arr = await res.json();
+
+    // 2. Create Deck object
+    this.deck = new Deck(arr);
+
+    // 3. NEW: log how many were loaded (debugging)
+    console.info(`Loaded ${this.deck.cards.length} cards from cards.json`);
+
+    // 4. Populate UI filters
+    this._populateFilters(arr);
+
+    // 5. Load saved labels from storage
+    this.labels = await this.storage.loadLabels();
+
+    // 6. Apply filters and render first card
+    this.applyFilters();
+    this.renderStats();
+    this.showCurrent();
+
+  }catch(err){
+    console.error('Failed to load cards.json', err);
+    this.ui.question.textContent = 'Failed to load cards.json — check console.';
   }
 
-  _populateFilters(arr){
-    const catSet = new Set();
-    arr.forEach(c=> (c.categories||[]).forEach(x=>catSet.add(x)));
-    const frag = document.createDocumentFragment();
-    [...catSet].sort().forEach(cat=>{
-      const opt = document.createElement('option'); opt.value=cat; opt.textContent=cat; this.ui.filterCategory.appendChild(opt);
-      const li = document.createElement('li'); li.textContent = cat; this.ui.categoriesList.appendChild(li);
+  // 7. NEW: integrity check AFTER deck is created (outside try/catch)
+  const bad = this.deck.cards.map((c, i) => {
+    if(!c || typeof c !== 'object') return `cards[${i}] not object`;
+    if(!c.id || !c.question || !c.answer) return `cards[${i}] missing id/question/answer`;
+    return null;
+  }).filter(x => x);
+
+  if(bad.length){
+    console.warn('cards.json integrity issues:', bad.slice(0,10));
+    this.ui.stats.innerHTML = `<span style="color:orange">
+      Loaded ${this.deck.cards.length} cards (some entries malformed — check console)
+    </span>`;
+  }
+}
+
+
+    _populateFilters(arr){
+    // clear existing options & list
+    this.ui.filterCategory.innerHTML = '<option value=\"\">All categories</option>';
+    this.ui.categoriesList.innerHTML = '';
+
+    const catCounts = {};
+    arr.forEach(c => (c.categories||[]).forEach(x => catCounts[x] = (catCounts[x]||0) + 1));
+
+    Object.keys(catCounts).sort().forEach(cat => {
+      // topbar <select> options
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = `${cat} (${catCounts[cat]})`;
+      this.ui.filterCategory.appendChild(opt);
+
+      // sidebar clickable list item
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cat-btn';
+      btn.dataset.cat = cat;
+      btn.textContent = `${cat} (${catCounts[cat]})`;
+      btn.addEventListener('click', (e) => {
+        // toggle filter: clicking same category clears it
+        const selected = this.ui.filterCategory.value;
+        if(selected === cat) {
+          this.ui.filterCategory.value = '';
+        } else {
+          this.ui.filterCategory.value = cat;
+        }
+        this.applyFilters();
+      });
+      li.appendChild(btn);
+      this.ui.categoriesList.appendChild(li);
     });
   }
 
-  applyFilters(){
+
+    applyFilters(){
     const q = this.ui.search.value.trim().toLowerCase();
     const cat = this.ui.filterCategory.value;
     const diff = this.ui.filterDifficulty.value;
     const use = this.ui.filterUsefulness.value;
-    let list = this.deck.cards.filter(c=>{
+
+    // Fast path: no filters/search -> full deck
+    if(!q && !cat && !diff && !use){
+      this.deck.order = _.range(this.deck.cards.length);
+      this.deck.index = 0;
+      this.showCurrent();
+      this.renderStats(); // update stats to show full vs filtered
+      return;
+    }
+
+    // Filter cards (return array of card objects)
+    const list = this.deck.cards.filter(c=>{
       if(q){
-        const hay = (c.question + ' ' + (c.categories||[]).join(' ') + ' ' + (c.answer||'')).toLowerCase();
+        const hay = ((c.question||'') + ' ' + ((c.categories||[]).join(' ')) + ' ' + (c.answer||'')).toLowerCase();
         if(!hay.includes(q)) return false;
       }
       if(cat && !(c.categories||[]).includes(cat)) return false;
@@ -153,12 +229,26 @@ class App {
       if(use && c.usefulness!==use) return false;
       return true;
     });
-    // rebuild deck.order
-    this.deck.order = list.map(c=>this.deck.cards.indexOf(c));
-    if(this.deck.order.length===0){ this.ui.question.textContent='No cards match filters.'; return; }
+
+    // Map to indices safely
+    const mapped = list.map(c => this.deck.cards.indexOf(c));
+    const invalid = mapped.filter(i => i < 0);
+    if(invalid.length){
+      console.warn('applyFilters: found invalid mapped indices (cards not found):', invalid);
+    }
+    this.deck.order = mapped.filter(i => i >= 0);
+
+    if(this.deck.order.length === 0){
+      this.ui.question.textContent = 'No cards match filters.';
+      this.ui.hints.innerHTML = '';
+      this.renderStats();
+      return;
+    }
     this.deck.index = 0;
     this.showCurrent();
+    this.renderStats();
   }
+
 
   showCurrent(){
     const cur = this.deck.current;
@@ -234,8 +324,9 @@ class App {
 
   renderStats(){
     const total = this.deck.cards.length;
-    const grasped = Object.values(this.labels).filter(x=>x.grasped).length;
-    this.ui.stats.innerHTML = `Cards: ${total}<br/>Grasped: ${grasped}`;
+    const filtered = (this.deck.order && Array.isArray(this.deck.order)) ? this.deck.order.length : total;
+    const grasped = Object.values(this.labels).filter(x=>x && x.grasped).length;
+    this.ui.stats.innerHTML = `Cards: ${filtered} shown • ${total} total<br/>Grasped: ${grasped}`;
   }
 
   shuffle(){ this.deck.shuffle(); this.showCurrent(); }
